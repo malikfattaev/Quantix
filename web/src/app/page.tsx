@@ -202,12 +202,6 @@ export default function Home() {
 
   return (
     <>
-      <header className="shrink-0 border-b border-stone-200/70 dark:border-stone-800/70 px-6 py-3.5 text-center">
-        <h1 className="text-base font-semibold tracking-tight text-stone-900 dark:text-stone-100">
-          Quantix
-        </h1>
-      </header>
-
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center px-6 pb-16">
