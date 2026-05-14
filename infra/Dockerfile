@@ -1,17 +1,18 @@
 # syntax=docker/dockerfile:1
-# Multi-stage Dockerfile for Quantix (Next.js 16 standalone)
+# Multi-stage Dockerfile for Quantix (Next.js 16 standalone).
+# Build context = repo root. Web app lives in ./web.
 
 # --- deps ---
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY web/package.json web/package-lock.json ./
 RUN npm ci
 
 # --- builder ---
 FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY web/ ./
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
