@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -19,8 +19,19 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Streaming buffer flushed once per animation frame to avoid re-rendering
+  // on every chunk arrival (which makes text appear in choppy bursts).
+  const bufferRef = useRef("");
+  const rafRef = useRef<number | null>(null);
+
+  // Track whether the user is at (or near) the bottom of the scroll area.
+  // We only auto-scroll while streaming if they haven't scrolled up.
+  const isAtBottomRef = useRef(true);
+
   const isEmpty = messages.length === 0;
 
+  // Autoresize textarea
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -28,17 +39,54 @@ export default function Home() {
     ta.style.height = `${Math.min(ta.scrollHeight, 200)}px`;
   }, [input]);
 
+  // Track scroll position
   useEffect(() => {
-    const c = scrollRef.current;
-    if (!c) return;
-    c.scrollTo({ top: c.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      isAtBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Stick to bottom on new content (only if user was already at bottom).
+  // Instant scroll feels smoother than smooth-scroll during rapid streaming.
+  useEffect(() => {
+    if (!isAtBottomRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  const flushBuffer = useCallback(() => {
+    rafRef.current = null;
+    const chunk = bufferRef.current;
+    if (!chunk) return;
+    bufferRef.current = "";
+    setMessages((m) => {
+      if (m.length === 0) return m;
+      const last = m[m.length - 1];
+      if (last.role !== "assistant") return m;
+      return [
+        ...m.slice(0, -1),
+        { ...last, content: last.content + chunk, status: undefined },
+      ];
+    });
+  }, []);
+
+  const scheduleFlush = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(flushBuffer);
+  }, [flushBuffer]);
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || loading) return;
 
+    isAtBottomRef.current = true;
     setMessages((m) => [
       ...m,
       { role: "user", content: trimmed },
@@ -71,46 +119,75 @@ export default function Home() {
 
         for (const line of lines) {
           if (!line.trim()) continue;
+          let msg: {
+            type: string;
+            content?: string;
+            text?: string;
+            items?: Source[];
+            message?: string;
+          };
           try {
-            const msg = JSON.parse(line);
-            setMessages((m) => {
-              const updated = [...m];
-              const last = updated[updated.length - 1];
-              if (!last || last.role !== "assistant") return m;
-              if (msg.type === "text") {
-                last.content += msg.content;
-                last.status = undefined;
-              } else if (msg.type === "status") {
-                last.status = msg.text;
-              } else if (msg.type === "sources") {
-                last.sources = msg.items;
-              } else if (msg.type === "error") {
-                last.content = `Error: ${msg.message}`;
-              }
-              return updated;
-            });
+            msg = JSON.parse(line);
           } catch {
-            // skip malformed line
+            continue;
+          }
+
+          if (msg.type === "text" && msg.content) {
+            bufferRef.current += msg.content;
+            scheduleFlush();
+          } else if (msg.type === "status") {
+            // Flush any pending text first so the status doesn't appear
+            // before the prior chunk lands.
+            flushBuffer();
+            setMessages((m) => {
+              if (m.length === 0) return m;
+              const last = m[m.length - 1];
+              if (last.role !== "assistant") return m;
+              return [...m.slice(0, -1), { ...last, status: msg.text }];
+            });
+          } else if (msg.type === "sources" && msg.items) {
+            flushBuffer();
+            const items = msg.items;
+            setMessages((m) => {
+              if (m.length === 0) return m;
+              const last = m[m.length - 1];
+              if (last.role !== "assistant") return m;
+              return [...m.slice(0, -1), { ...last, sources: items }];
+            });
+          } else if (msg.type === "error") {
+            flushBuffer();
+            const errMsg = msg.message ?? "Unknown error";
+            setMessages((m) => {
+              if (m.length === 0) return m;
+              const last = m[m.length - 1];
+              if (last.role !== "assistant") return m;
+              return [
+                ...m.slice(0, -1),
+                { ...last, content: `Error: ${errMsg}` },
+              ];
+            });
           }
         }
       }
+      flushBuffer();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      flushBuffer();
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
       setMessages((m) => {
-        const updated = [...m];
-        const last = updated[updated.length - 1];
-        if (last && last.role === "assistant") {
-          last.content = `Error: ${message}`;
-        }
-        return updated;
+        if (m.length === 0) return m;
+        const last = m[m.length - 1];
+        if (last.role !== "assistant") return m;
+        return [
+          ...m.slice(0, -1),
+          { ...last, content: `Error: ${errMsg}` },
+        ];
       });
     } finally {
       setLoading(false);
       setMessages((m) => {
-        const updated = [...m];
-        const last = updated[updated.length - 1];
-        if (last) last.loading = false;
-        return updated;
+        if (m.length === 0) return m;
+        const last = m[m.length - 1];
+        return [...m.slice(0, -1), { ...last, loading: false }];
       });
       textareaRef.current?.focus();
     }
@@ -131,7 +208,7 @@ export default function Home() {
         </h1>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-area">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center px-6 pb-16">
             <h2 className="mb-3 text-center text-3xl sm:text-4xl font-semibold tracking-tight text-stone-900 dark:text-stone-100">
@@ -144,7 +221,9 @@ export default function Home() {
         ) : (
           <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 space-y-8">
             {messages.map((m, i) => (
-              <MessageBlock key={i} message={m} />
+              <div key={i} className="msg-enter">
+                <MessageBlock message={m} />
+              </div>
             ))}
           </div>
         )}
@@ -167,7 +246,7 @@ export default function Home() {
               type="submit"
               disabled={loading || !input.trim()}
               aria-label="Send"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-white transition-colors hover:bg-stone-700 active:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-900 text-white transition-all duration-200 hover:bg-stone-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
             >
               {loading ? (
                 <Spinner inverse />
