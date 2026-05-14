@@ -1,6 +1,20 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic();
+function getApiKey(): string {
+  const raw = process.env.ANTHROPIC_API_KEY ?? "";
+  // Strip any non-printable / non-ASCII characters that may have been pasted
+  // along with the key (e.g. a stray terminal prompt char like ❯, BOMs, smart
+  // quotes). HTTP headers must be ASCII or fetch throws a ByteString error.
+  const cleaned = raw.replace(/[^\x20-\x7E]/g, "").trim();
+  if (!cleaned.startsWith("sk-ant-")) {
+    throw new Error(
+      "ANTHROPIC_API_KEY is missing or malformed. It must start with `sk-ant-`. Check the env var in your hosting platform - a stray character may have been pasted in.",
+    );
+  }
+  return cleaned;
+}
+
+const client = new Anthropic({ apiKey: getApiKey() });
 
 const PRODUCT_NAME = "Quantix";
 
