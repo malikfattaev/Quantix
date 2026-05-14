@@ -32,7 +32,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Pro",
-    price: "$10",
+    price: "$20",
     period: "/ month",
     description: "For everyday research and serious users.",
     features: [
@@ -46,18 +46,18 @@ const TIERS: Tier[] = [
     featured: true,
   },
   {
-    name: "Team",
-    price: "$30",
-    period: "/ user / month",
-    description: "Shared workspaces for teams that decide together.",
+    name: "Max",
+    price: "$50",
+    period: "/ month",
+    description: "Power users who want everything, unlimited.",
     features: [
       "Everything in Pro",
-      "Shared workspaces",
-      "Team analytics",
-      "SSO (coming soon)",
+      "Highest priority response speed",
+      "Longer answers and bigger context",
+      "Advanced research workflows",
       "Priority support",
     ],
-    cta: { label: "Contact us", href: "mailto:hello@quantix.app" },
+    cta: { label: "Coming soon", href: "/signup" },
   },
 ];
 
@@ -82,7 +82,7 @@ export default function PricingPage() {
         </div>
 
         <p className="mt-12 text-center text-sm text-stone-500 dark:text-stone-400">
-          Prices in USD. Cancel anytime. Pro and Team plans launch soon.
+          Prices in USD. Cancel anytime. Pro and Max plans launch soon.
         </p>
       </div>
     </div>
