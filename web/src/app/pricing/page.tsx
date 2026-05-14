@@ -4,7 +4,7 @@ import { Check, ArrowRight } from "lucide-react";
 export const metadata = {
   title: "Pricing - Quantix",
   description:
-    "Pick a plan that fits how often you search. Start free, upgrade when you need more.",
+    "Pick a plan that fits how often you search. Upgrade anytime as you grow.",
 };
 
 type Tier = {
@@ -19,16 +19,16 @@ type Tier = {
 
 const TIERS: Tier[] = [
   {
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    description: "Try out Quantix without committing.",
+    name: "Start",
+    price: "$5",
+    period: "/ month",
+    description: "Get rolling with Quantix at a low price.",
     features: [
-      "10 searches per day",
+      "30 searches per day",
       "Verified sources on every answer",
       "Standard response speed",
     ],
-    cta: { label: "Start free", href: "/" },
+    cta: { label: "Get started", href: "/signup" },
   },
   {
     name: "Pro",
@@ -70,7 +70,7 @@ export default function PricingPage() {
             Simple pricing.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-stone-600 dark:text-stone-400">
-            Start free. Upgrade when you want unlimited searches and deeper
+            Pick a plan and upgrade when you want unlimited searches and deeper
             answers.
           </p>
         </header>
