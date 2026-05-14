@@ -1,6 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-function getApiKey(): string {
+// Lazy-initialized client. We can't construct it at module load time because
+// Next.js runs "collect page data" during the build, and at build time on
+// platforms like Railway the env vars aren't injected yet.
+let _client: Anthropic | null = null;
+
+function getClient(): Anthropic {
+  if (_client) return _client;
   const raw = process.env.ANTHROPIC_API_KEY ?? "";
   // Strip any non-printable / non-ASCII characters that may have been pasted
   // along with the key (e.g. a stray terminal prompt char like ❯, BOMs, smart
@@ -11,10 +17,13 @@ function getApiKey(): string {
       "ANTHROPIC_API_KEY is missing or malformed. It must start with `sk-ant-`. Check the env var in your hosting platform - a stray character may have been pasted in.",
     );
   }
-  return cleaned;
+  _client = new Anthropic({ apiKey: cleaned });
+  return _client;
 }
 
-const client = new Anthropic({ apiKey: getApiKey() });
+// Force this route to be dynamic so Next.js never tries to evaluate it at
+// build time (it depends on a runtime env var anyway).
+export const dynamic = "force-dynamic";
 
 const PRODUCT_NAME = "Quantix";
 
@@ -78,7 +87,7 @@ export async function POST(request: Request) {
       };
 
       try {
-        const response = client.messages.stream({
+        const response = getClient().messages.stream({
           model: "claude-haiku-4-5",
           max_tokens: 2048,
           system: SYSTEM_PROMPT,
