@@ -2,101 +2,47 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #000000;
-  --foreground: #e8e8e8;
-  --accent: #50fa7b;
-  --accent-dim: rgba(80, 250, 123, 0.15);
-  --cyan: #8be9fd;
-  --pink: #ff79c6;
-  --muted: #6272a4;
+  --background: #fafaf9;
+  --foreground: #1c1917;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-pixel-title: var(--font-pixel-title);
-  --font-pixel-body: var(--font-pixel-body);
+  --font-sans:
+    var(--font-sans), system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c0a09;
+    --foreground: #f5f5f4;
+  }
+}
+
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-pixel-body), "Courier New", monospace;
-  font-size: 20px;
-  line-height: 1.5;
-  letter-spacing: 0.01em;
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* CRT scan line overlay across the whole viewport */
-.scanlines::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, 0.03) 0,
-    rgba(255, 255, 255, 0.03) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  z-index: 100;
-  mix-blend-mode: overlay;
+.scroll-area {
+  scroll-behavior: smooth;
 }
 
-/* Subtle vignette */
-.scanlines::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 50%,
-    rgba(0, 0, 0, 0.5) 100%
-  );
-  z-index: 99;
+textarea {
+  resize: none;
 }
 
-/* Blinking cursor */
-@keyframes pixel-blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.pixel-cursor {
-  display: inline-block;
-  animation: pixel-blink 1s steps(1) infinite;
-}
-
-/* Glow effect for title */
-.pixel-glow {
-  text-shadow:
-    0 0 4px var(--accent),
-    0 0 12px rgba(80, 250, 123, 0.5),
-    0 0 24px rgba(80, 250, 123, 0.25);
-}
-
-/* Force pixelated rendering on small graphics */
-img,
-canvas {
-  image-rendering: pixelated;
-}
-
-/* Selection color */
 ::selection {
-  background: var(--accent);
-  color: #000;
+  background: rgba(28, 25, 23, 0.15);
 }
 
-/* Disable text smoothing for that crunchy pixel feel */
-* {
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: grayscale;
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background: rgba(245, 245, 244, 0.2);
+  }
 }

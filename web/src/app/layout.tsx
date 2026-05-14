@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
-import { Press_Start_2P, VT323 } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const pixelTitle = Press_Start_2P({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-pixel-title",
-  display: "swap",
-});
-
-const pixelBody = VT323({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-pixel-body",
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "QUANTIX - AI search that doesn't lie",
+  title: "Quantix - AI search that doesn't lie",
   description: "AI-powered search with verified answers.",
 };
 
@@ -27,11 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${pixelTitle.variable} ${pixelBody.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-black text-zinc-200 scanlines">
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body className="h-dvh flex flex-col bg-stone-50 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
         {children}
       </body>
     </html>
