@@ -1,26 +1,102 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #e8e8e8;
+  --accent: #50fa7b;
+  --accent-dim: rgba(80, 250, 123, 0.15);
+  --cyan: #8be9fd;
+  --pink: #ff79c6;
+  --muted: #6272a4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-pixel-title: var(--font-pixel-title);
+  --font-pixel-body: var(--font-pixel-body);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-pixel-body), "Courier New", monospace;
+  font-size: 20px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+/* CRT scan line overlay across the whole viewport */
+.scanlines::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 100;
+  mix-blend-mode: overlay;
+}
+
+/* Subtle vignette */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  z-index: 99;
+}
+
+/* Blinking cursor */
+@keyframes pixel-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.pixel-cursor {
+  display: inline-block;
+  animation: pixel-blink 1s steps(1) infinite;
+}
+
+/* Glow effect for title */
+.pixel-glow {
+  text-shadow:
+    0 0 4px var(--accent),
+    0 0 12px rgba(80, 250, 123, 0.5),
+    0 0 24px rgba(80, 250, 123, 0.25);
+}
+
+/* Force pixelated rendering on small graphics */
+img,
+canvas {
+  image-rendering: pixelated;
+}
+
+/* Selection color */
+::selection {
+  background: var(--accent);
+  color: #000;
+}
+
+/* Disable text smoothing for that crunchy pixel feel */
+* {
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
 }
